@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MALVIN-XD QR PAIR</title>
+    <style>
+        body { background: #000; color: #fff; font-family: 'Arial', sans-serif; text-align: center; padding: 50px 20px; }
+        .qr-container { background: #fff; padding: 20px; display: inline-block; border-radius: 15px; margin-top: 20px; }
+        #qr-image { width: 250px; height: 250px; }
+        .loading { color: #25D366; font-weight: bold; }
+        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #25D366; color: #000; text-decoration: none; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Scan QR Code</h1>
+    <p>Open WhatsApp > Linked Devices > Link a Device</p>
+    
+    <div class="qr-container" id="container">
+        <div id="loader" class="loading">GENERATING QR...</div>
+        <img id="qr-image" src="" style="display:none;">
+    </div>
+
+    <br>
+    <a href="/" class="btn">BACK TO HOME</a>
+
+    <script>
+        async function fetchQR() {
+            try {
+                const response = await fetch('/server');
+                const data = await response.json();
+                if (data.qr) {
+                    document.getElementById('loader').style.display = 'none';
+                    const img = document.getElementById('qr-image');
+                    img.src = data.qr;
+                    img.style.display = 'block';
+                }
+            } catch (e) {
+                document.getElementById('loader').innerText = "FAILED TO LOAD. REFRESHING...";
+                setTimeout(() => location.reload(), 3000);
+            }
+        }
+        fetchQR();
+        // Refresh QR every 30 seconds to keep it valid
+        setInterval(fetchQR, 30000);
+    </script>
+</body>
+</html>
