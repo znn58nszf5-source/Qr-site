@@ -7,6 +7,21 @@ const pino = require('pino');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 1. LANDING PAGE (The "Correct Spot" fix)
+app.get("/", (req, res) => {
+    res.send(`
+        <div style="text-align:center; font-family:sans-serif; margin-top:50px; background:#f9f9f9; padding:40px; border-radius:15px;">
+            <h1 style="color:#25D366;">🟢 QR Pairing Tool is Online</h1>
+            <p>To start pairing, add a name to the end of the URL.</p>
+            <p style="background:#fff; padding:15px; display:inline-block; border-radius:8px; border:1px solid #ddd; font-weight:bold;">
+                Example: <code>${req.protocol}://${req.get('host')}/pair/bot1</code>
+            </p>
+            <p style="color:#888; font-size:0.9em; margin-top:20px;">Scan once, get your ID string, and you're done!</p>
+        </div>
+    `);
+});
+
+// 2. PAIRING ROUTE
 app.get("/pair/:id", async (req, res) => {
     const id = req.params.id;
     const sessionDir = `./temp_${id}`;
@@ -24,46 +39,49 @@ app.get("/pair/:id", async (req, res) => {
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('connection.update', async (update) => {
-        const { connection, qr, lastDisconnect } = update;
+        const { connection, qr } = update;
 
-        // 1. If QR is generated, send it to the browser
         if (qr) {
             const qrImage = await QRCode.toDataURL(qr);
             res.send(`
                 <div style="text-align:center; font-family:sans-serif; margin-top:50px;">
-                    <h2>Pairing ID: ${id}</h2>
-                    <img src="${qrImage}" style="width:300px; border: 5px solid #25D366; border-radius:10px;"/>
-                    <p>Scan this QR with your WhatsApp Linked Devices.</p>
-                    <p><i>The session ID will appear here after success.</i></p>
-                    <script>setTimeout(() => { location.reload(); }, 20000);</script>
+                    <h2 style="color:#075e54;">Scan to Pair: ${id}</h2>
+                    <img src="${qrImage}" style="width:300px; border: 8px solid #25D366; border-radius:15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"/>
+                    <p style="margin-top:20px;">Open WhatsApp > Linked Devices > Link a Device.</p>
+                    <p style="color:#888;">This page will refresh every 30 seconds if not scanned.</p>
+                    <script>setTimeout(() => { location.reload(); }, 30000);</script>
                 </div>
             `);
         }
 
-        // 2. When Scan is Successful
         if (connection === 'open') {
             const creds = JSON.parse(fs.readFileSync(`${sessionDir}/creds.json`));
             const sessionId = "GEMINI_SESSION_" + Buffer.from(JSON.stringify(creds)).toString('base64');
             
-            // Show the ID on the screen for easy copying
             res.send(`
-                <div style="text-align:center; font-family:sans-serif; margin-top:50px; padding:20px;">
+                <div style="text-align:center; font-family:sans-serif; margin-top:50px; padding:30px; border: 2px dashed #25D366; border-radius:15px; max-width:600px; margin-left:auto; margin-right:auto;">
                     <h2 style="color:#25D366;">✅ Pairing Successful!</h2>
-                    <p>Copy the Session ID below:</p>
-                    <textarea style="width:100%; height:150px; word-break:break-all; padding:10px; border-radius:10px; border:1px solid #ccc;">${sessionId}</textarea>
+                    <p>Copy your <b>One-Line Session ID</b> below:</p>
+                    <textarea readonly style="width:100%; height:160px; word-break:break-all; padding:15px; border-radius:10px; border:1px solid #ccc; font-family:monospace; font-size:12px; background:#fefefe;">${sessionId}</textarea>
                     <br><br>
-                    <button onclick="navigator.clipboard.writeText('${sessionId}')" style="padding:10px 20px; background:#25D366; color:white; border:none; border-radius:5px; cursor:pointer;">Copy to Clipboard</button>
-                    <p style="color:red;">⚠️ After copying, you can close this page. The temp files will be deleted.</p>
+                    <button onclick="navigator.clipboard.writeText('${sessionId}')" style="padding:12px 25px; background:#25D366; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">Copy ID String</button>
+                    <p style="color:#d9534f; margin-top:20px; font-weight:bold;">⚠️ Copy this string and save it. You can now close this tab.</p>
                 </div>
             `);
 
-            // Cleanup: Delete the temp folder after 1 minute
+            // Auto-Cleanup temp files
             setTimeout(() => {
-                fs.rmSync(sessionDir, { recursive: true, force: true });
-                process.exit(0); // Optional: Stop the process to save resources
-            }, 60000);
+                if (fs.existsSync(sessionDir)) fs.rmSync(sessionDir, { recursive: true, force: true });
+            }, 30000);
         }
     });
 });
 
-app.listen(PORT, () => console.log(`🚀 Independent Pairing Site live on port ${PORT}`));
+// 3. START SERVER
+app.listen(PORT, () => {
+    console.log(`
+    =========================================
+    🚀 PAIRING SITE LIVE: http://localhost:${PORT}
+    =========================================
+    `);
+});
