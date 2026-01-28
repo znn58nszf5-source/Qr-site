@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MALVIN-XD CODE PAIR</title>
+    <style>
+        body { background: #000; color: #fff; font-family: 'Arial', sans-serif; text-align: center; padding: 50px 20px; }
+        .box { background: #111; padding: 30px; border-radius: 15px; border: 1px solid #25D366; display: inline-block; width: 100%; max-width: 400px; }
+        input { width: 80%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 1.1em; }
+        button { width: 85%; padding: 12px; background: #25D366; color: #000; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        #pair-code { font-size: 3em; color: #25D366; letter-spacing: 5px; margin: 20px 0; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>Pairing Code</h1>
+        <p>Enter number with Country Code (e.g. 233500000000)</p>
+        
+        <input type="number" id="number" placeholder="233501234567">
+        <button onclick="getCode()" id="submit-btn">GET CODE</button>
+
+        <div id="loading" style="display:none; color:#25D366; margin-top:20px;">PLEASE WAIT...</div>
+        <div id="pair-code"></div>
+        
+        <p id="instruction" style="display:none; font-size: 0.9em; color: #aaa;">
+            Go to Linked Devices > Link with phone number instead.
+        </p>
+    </div>
+    <br><br>
+    <a href="/" style="color:#25D366; text-decoration:none;">← BACK HOME</a>
+
+    <script>
+        async function getCode() {
+            const num = document.getElementById('number').value;
+            if (!num) return alert("Enter your number!");
+            
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const response = await fetch('/code?number=' + num);
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                const codeDiv = document.getElementById('pair-code');
+                codeDiv.innerText = data.code;
+                codeDiv.style.display = 'block';
+                document.getElementById('instruction').style.display = 'block';
+            } catch (e) {
+                alert("Error getting code. Try again.");
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
